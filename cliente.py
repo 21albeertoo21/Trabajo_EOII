@@ -3,7 +3,7 @@ import tkinter as tk
 def mostrar_error_entero():
     ventana_no_entero = tk.Toplevel(ventana)
     ventana_no_entero.title("Error")
-    ventana_no_entero.geometry("300x100")  # Ajusta el tamaño de la ventana de error
+    ventana_no_entero.geometry("300x100")  
 
     # Centrar la ventana de error respecto a la ventana principal
     ventana_no_entero.transient(ventana)
@@ -16,34 +16,43 @@ def mostrar_error_entero():
     tk.Label(ventana_no_entero, text="Por favor introduce un valor entero").grid(row=0, column=0, padx=20, pady=20)
     ventana_no_entero.mainloop()
 
-# Función que se ejecutará al pulsar el botón
 def boton_click():
-    texto = cuadro_texto_puerto.get()
+    texto = cuadro_texto_mensaje.get()
+    texto_IP = cuadro_texto_IP.get()
+    texto_puerto = cuadro_texto_puerto.get()
     try:
-        numero = int(texto)
-        cuadro_texto_destino.insert(tk.END, f"{numero}\n")
+        texto_IP_numero = int(texto_IP)
+        texto_puerto_numero = int(texto_puerto)
+        cuadro_texto_destino.insert(tk.END, texto+'\n')
+        #Ajustar posición scrollbar para mostrar siempre el último texto
         cuadro_texto_destino.yview_moveto(1.0)
-    except ValueError:
+    except:
         mostrar_error_entero()
 
 if __name__ == '__main__':
     # Creamos la ventana
     ventana = tk.Tk()
-    ventana.title("Recibir mensajes")
-    # Creamos una etiqueta
-    tk.Label(ventana, text='Puerto servidor:').grid(row=0, column=0)
-    # Creamos un cuadro de texto que acepta una sola línea
+    ventana.title("Enviar mensajes")
+    # Creamos las etiquetas necesarias
+    tk.Label(ventana, text='IP servidor:').grid(row=0, column=0)
+    tk.Label(ventana, text='Puerto servidor:').grid(row=1, column=0)
+    tk.Label(ventana, text='Mensaje:').grid(row=2, column=0)
+    # Creamos los cuadros de texto para las 3 etiquetas
+    cuadro_texto_IP = tk.Entry(ventana)
+    cuadro_texto_IP.grid(row=0, column=1)
     cuadro_texto_puerto = tk.Entry(ventana)
-    cuadro_texto_puerto.grid(row=0, column=1)
+    cuadro_texto_puerto.grid(row=1, column=1)
+    cuadro_texto_mensaje = tk.Entry(ventana)
+    cuadro_texto_mensaje.grid(row=2, column=1)
     #Creamos un botón
-    boton = tk.Button(ventana, text="Iniciar servidor en un nuevo hilo", command=boton_click)
-    boton.grid(row=1, column=1, columnspan=2)
+    boton = tk.Button(ventana, text="Enviar mensaje", command=boton_click)
+    boton.grid(row=3, column=1, columnspan=2)
     # Creamos un cuadro de texto que acepta varias líneas
     cuadro_texto_destino = tk.Text(ventana)
-    cuadro_texto_destino.grid(row=2, column=0, columnspan=2)
+    cuadro_texto_destino.grid(row=4, column=0, columnspan=2)
     # Creamos el scrollbar y lo asociamos al cuadro de texto
     scrollbar = tk.Scrollbar(ventana)
-    scrollbar.grid(row=2, column=2, sticky=tk.NS)
+    scrollbar.grid(row=4, column=2, sticky=tk.NS)
     cuadro_texto_destino.config(yscrollcommand=scrollbar.set)
     scrollbar.config(command=cuadro_texto_destino.yview)
     # Visualizamos la ventana
