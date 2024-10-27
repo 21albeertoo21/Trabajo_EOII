@@ -40,12 +40,12 @@ def handle_client(connection, client_address):
     try:
         while True:
             data = connection.recv(1024)
-            data_desarialized = data.decode()
+            data_decode = data.decode()
             if not data:
                 print("no datos del cliente con puerto: ", client_address[1])
-                break
-            ventana.after(0, cuadro_texto_destino.insert, tk.END, f"Cliente en puerto {client_address[1]}: {data_desarialized}\n")
-            ventana.after(0, cuadro_texto_destino.yview_moveto, 1.0)
+            else:
+                ventana.after(0, cuadro_texto_destino.insert, tk.END, f"Cliente en puerto {client_address[1]}: {data_decode}\n")
+                ventana.after(0, cuadro_texto_destino.yview_moveto, 1.0)
     finally:
         connection.close()
         print(f"Conexion cerrada con {client_address[1]}")

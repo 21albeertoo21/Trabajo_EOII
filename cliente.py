@@ -11,9 +11,8 @@ def obtener_clima_valencia():
     response = requests.get(url)
     if response.status_code == 200:
         data = response.json()
-        descripcion = data['weather'][0]['description']
         temperatura = data['main']['temp']
-        return f"El clima en Valencia hoy es {descripcion} con una temperatura de {temperatura}°C"
+        return f"La temperatura en valencia hoy es de {temperatura}°C"
     else:
         mostrar_error_clima()
 
@@ -72,7 +71,7 @@ def boton_click():
     try:
         texto_puerto_numero = int(texto_puerto)
         hora_actual = datetime.datetime.now().strftime("%H:%M:%S")
-        cuadro_texto_destino.insert(tk.END, f"Mensaje[{texto}+ enviado por el cliente a las {hora_actual}."+'\n')
+        cuadro_texto_destino.insert(tk.END, f"Mensaje [{texto}] enviado por el cliente a las {hora_actual}.\n")
         #Ajustar posición scrollbar para mostrar siempre el último texto
         cuadro_texto_destino.yview_moveto(1.0)
     except:
@@ -88,7 +87,7 @@ def boton_click():
     elif texto == "HORA":
         hora_actual = datetime.datetime.now().strftime("%H:%M:%S")
         enviar_mensaje(hora_actual, conexion)
-    elif texto == "Tiempo en Valencia hoy":
+    elif texto == "Temperatura en Valencia hoy":
         data = obtener_clima_valencia()
         enviar_mensaje(data, conexion)
     else:
@@ -99,7 +98,7 @@ def crear_cliente(texto_puerto, texto_IP):
     conexion = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     puerto = int(texto_puerto)
     direccion_IP = texto_IP
-    conexion.connect(direccion_IP, puerto)
+    conexion.connect((direccion_IP, puerto))
     #Establecer timeout para la recepción de datos
     conexion.settimeout(5)
 
