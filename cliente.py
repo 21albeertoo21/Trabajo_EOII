@@ -72,7 +72,7 @@ def boton_click():
     try:
         texto_puerto_numero = int(texto_puerto)
         hora_actual = datetime.datetime.now().strftime("%H:%M:%S")
-        cuadro_texto_destino.insert(tk.END, f"mensaje({texto}) enviado por el cliente a las {hora_actual}"+'\n')
+        cuadro_texto_destino.insert(tk.END, f"Mensaje[{texto}+ enviado por el cliente a las {hora_actual}."+'\n')
         #Ajustar posición scrollbar para mostrar siempre el último texto
         cuadro_texto_destino.yview_moveto(1.0)
     except:
