@@ -51,8 +51,8 @@ def obtener_clima_valencia():
     else:
         mostrar_error_clima()
 
-def mensaje_por_ventana(usuario,data):
-    ventana.after(0, cuadro_texto_destino.insert, tk.END, f"Usuario:{usuario}: {data}\n")
+def mensaje_por_ventana(message):
+    ventana.after(0, cuadro_texto_destino.insert, tk.END, f"{message}\n")
     ventana.after(0, cuadro_texto_destino.yview_moveto, 1.0)
 
 def handle_client(connection, client_address):
@@ -60,6 +60,8 @@ def handle_client(connection, client_address):
     try:
         usuario_coded = connection.recv(1024)
         usuario = usuario_coded.decode()
+        message=f"Conexion establecida con {usuario}"
+        mensaje_por_ventana(message)
         while True:
             data = connection.recv(1024)
             data_decode = data.decode()
@@ -68,17 +70,20 @@ def handle_client(connection, client_address):
                     break
                 elif data_decode == "HORA":
                     hora_actual = datetime.datetime.now().strftime("%H:%M:%S")
-                    mensaje_por_ventana(usuario,data_decode)
+                    message = f"{usuario}: {hora_actual}"
+                    mensaje_por_ventana(message)
                 elif data_decode == "Tiempo en Valencia hoy":
                     tiempo_valencia_message = obtener_clima_valencia()
-                    mensaje_por_ventana(usuario,tiempo_valencia_message)
+                    message = f"{usuario}: {tiempo_valencia_message}"
+                    mensaje_por_ventana(message)
                 else:
-                    mensaje_por_ventana(usuario,data_decode)
+                    message = f"{usuario}: {data_decode}"
+                    mensaje_por_ventana(message)
     finally:
         connection.close()
         print(f"Conexion cerrada con {client_address[1]}")
-        ventana.after(0, cuadro_texto_destino.insert, tk.END, f"Conexion cerrada con {usuario}\n")
-        ventana.after(0, cuadro_texto_destino.yview_moveto, 1.0)
+        message=f"Conexion cerrada con {usuario}"
+        mensaje_por_ventana(message)
 
 #Create server socket TCP
 def create_server(port):
@@ -86,9 +91,9 @@ def create_server(port):
     server_address = ('127.0.0.1',port)
     server.bind(server_address)
     server.listen(1)
-    print("Servidor escuchando en el puerto",port)
-    ventana.after(0, cuadro_texto_destino.insert, tk.END, f"Servidor escuchando en el puerto{port}\n")
-    ventana.after(0, cuadro_texto_destino.yview_moveto, 1.0)
+    print("Servidor escuchando en el puerto: ",port)
+    message= f"Servidor escuchando en el puerto{port}"
+    mensaje_por_ventana(message)
     while True:
         connection,client_address = server.accept()
         client_thread=threading.Thread(target=handle_client,args=(connection,client_address))
