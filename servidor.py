@@ -38,8 +38,6 @@ def handle_client(connection, client_address):
         ventana.after(0, cuadro_texto_destino.yview_moveto, 1.0)
 
 
-
-
 #Create server socket TCP
 def create_server(port):
     server = socket(AF_INET,SOCK_STREAM)
