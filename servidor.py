@@ -19,22 +19,7 @@ def mostrar_error_entero():
 
     tk.Label(ventana_no_entero, text="Por favor introduce un valor entero").grid(row=0, column=0, padx=20, pady=20)
     ventana_no_entero.mainloop()
-def mostrar_info_puerto():
-    ventana_info = tk.Toplevel(ventana)
-    ventana_info.title("Servidor en ejecución")
-    ventana_info.geometry("300x100")
-    ventana_info.transient(ventana)
-    ventana_info.grab_set()
-    ventana_info.update_idletasks()
-    x = ventana.winfo_x() + (ventana.winfo_width() // 2) - (ventana_info.winfo_width() // 2)
-    y = ventana.winfo_y() + (ventana.winfo_height() // 2) - (ventana_info.winfo_height() // 2)
-    ventana_info.geometry(f"+{x}+{y}")
 
-    # Mensaje de información
-    tk.Label(ventana_info, text="Servidor ya está en ejecución en un puerto.").grid(row=0, column=0, padx=20, pady=20)
-    tk.Label(ventana_info, text="Para cambiar el puerto, cierra el servidor.").grid(row=1, column=0, padx=20, pady=20)
-    
-    
 def handle_client(connection, client_address):
     print(f"conexion establecida con puerto {client_address[0]}")
     try:
@@ -62,7 +47,6 @@ def create_server(port):
     server.bind(server_address)
     server.listen(1)
     print("Servidor escuchando en el puerto",port)
-    ventana.after(0, mostrar_info_puerto)
     while True:
         connection,client_address = server.accept()
         client_thread=threading.Thread(target=handle_client,args=(connection,client_address))
