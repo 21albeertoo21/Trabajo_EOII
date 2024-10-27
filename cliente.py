@@ -1,6 +1,37 @@
 import tkinter as tk
 import socket
 import datetime
+import requests
+
+#Llave para poder utilizar la API de OpenWeatherMap para obtener la información del tiempo en valencia
+API_KEY = "cbf557829a16f6572809313ff5b76dd0"
+
+def obtener_clima_valencia():
+    url = f"http://api.openweathermap.org/data/2.5/weather?q=Valencia,ES&appid={API_KEY}&units=metric"
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        descripcion = data['weather'][0]['description']
+        temperatura = data['main']['temp']
+        return f"El clima en Valencia hoy es {descripcion} con una temperatura de {temperatura}°C"
+    else:
+        mostrar_error_clima()
+
+def mostrar_error_clima():
+    ventana_no_clima = tk.Toplevel(ventana)
+    ventana_no_clima.title("Error")
+    ventana_no_clima.geometry("300x100")  
+
+    # Centrar la ventana de error respecto a la ventana principal
+    ventana_no_clima.transient(ventana)
+    ventana_no_clima.grab_set()
+    ventana_no_clima.update_idletasks()
+    x = ventana.winfo_x() + (ventana.winfo_width() // 2) - (ventana_no_clima.winfo_width() // 2)
+    y = ventana.winfo_y() + (ventana.winfo_height() // 2) - (ventana_no_clima.winfo_height() // 2)
+    ventana_no_clima.geometry(f"+{x}+{y}")
+
+    tk.Label(ventana_no_clima, text="No se pudo obtener el clima").grid(row=0, column=0, padx=20, pady=20)
+    ventana_no_clima.mainloop()
 
 def mostrar_error_entero():
     ventana_no_entero = tk.Toplevel(ventana)
@@ -48,12 +79,20 @@ def boton_click():
         mostrar_error_entero()
     
     conexion = crear_cliente(texto_puerto, texto_IP)
-    enviar_mensaje(texto, conexion)
     #cerrar el cliente y la ventana
     if texto == "FIN":
+        enviar_mensaje(texto, conexion)
         conexion.close()
         mostrar_fin_conexion()
         ventana.destroy()
+    elif texto == "HORA":
+        hora_actual = datetime.datetime.now().strftime("%H:%M:%S")
+        enviar_mensaje(hora_actual, conexion)
+    elif texto == "Tiempo en Valencia hoy":
+        data = obtener_clima_valencia()
+        enviar_mensaje(data, conexion)
+    else:
+        enviar_mensaje(texto, conexion)
 
 def crear_cliente(texto_puerto, texto_IP):
     #conexion con el servidor
