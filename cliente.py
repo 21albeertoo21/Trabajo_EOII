@@ -61,6 +61,8 @@ def crear_cliente(texto_puerto, texto_IP, texto):
     enviar_mensaje(texto, conexion)
 
 def enviar_mensaje(texto, conexion):
+    if texto == "FIN":
+        mostrar_fin_conexion()
     conexion.send(texto.encode())
 
 if __name__ == '__main__':
