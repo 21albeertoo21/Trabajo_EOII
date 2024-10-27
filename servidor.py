@@ -2,8 +2,13 @@ import tkinter as tk
 from socket import *
 import pickle 
 import sys
-from datetime import datetime
+import datetime 
 import threading
+import requests
+
+#Llave para poder utilizar la API de OpenWeatherMap para obtener la información del tiempo en valencia
+API_KEY = "cbf557829a16f6572809313ff5b76dd0"
+
 def mostrar_error_entero():
     ventana_no_entero = tk.Toplevel(ventana)
     ventana_no_entero.title("Error")
@@ -20,23 +25,57 @@ def mostrar_error_entero():
     tk.Label(ventana_no_entero, text="Por favor introduce un valor entero").grid(row=0, column=0, padx=20, pady=20)
     ventana_no_entero.mainloop()
 
+def mostrar_error_clima():
+    ventana_no_clima = tk.Toplevel(ventana)
+    ventana_no_clima.title("Error")
+    ventana_no_clima.geometry("300x100")  
+
+    # Centrar la ventana de error respecto a la ventana principal
+    ventana_no_clima.transient(ventana)
+    ventana_no_clima.grab_set()
+    ventana_no_clima.update_idletasks()
+    x = ventana.winfo_x() + (ventana.winfo_width() // 2) - (ventana_no_clima.winfo_width() // 2)
+    y = ventana.winfo_y() + (ventana.winfo_height() // 2) - (ventana_no_clima.winfo_height() // 2)
+    ventana_no_clima.geometry(f"+{x}+{y}")
+
+    tk.Label(ventana_no_clima, text="No se pudo obtener el clima").grid(row=0, column=0, padx=20, pady=20)
+    ventana_no_clima.mainloop()
+
+def obtener_clima_valencia():
+    url = f"http://api.openweathermap.org/data/2.5/weather?q=Valencia,ES&appid={API_KEY}&units=metric"
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        temperatura = data['main']['temp']
+        return f"La temperatura en valencia hoy es de {temperatura}°C"
+    else:
+        mostrar_error_clima()
+
 def handle_client(connection, client_address):
     print(f"conexion establecida con puerto {client_address[0]}")
     try:
         while True:
             data = connection.recv(1024)
             data_decode = data.decode()
-            if not data:
-                print("no datos del cliente con puerto: ", client_address[1])
-            else:
-                ventana.after(0, cuadro_texto_destino.insert, tk.END, f"Cliente en puerto {client_address[1]}: {data_decode}\n")
-                ventana.after(0, cuadro_texto_destino.yview_moveto, 1.0)
+            if data:
+                if data_decode == "FIN":
+                    break
+                elif data_decode == "HORA":
+                    hora_actual = datetime.datetime.now().strftime("%H:%M:%S")
+                    ventana.after(0, cuadro_texto_destino.insert, tk.END, f"Cliente en puerto {client_address[1]}: {hora_actual}\n")
+                    ventana.after(0, cuadro_texto_destino.yview_moveto, 1.0)
+                elif data_decode == "Tiempo en Valencia hoy":
+                    data = obtener_clima_valencia()
+                    ventana.after(0, cuadro_texto_destino.insert, tk.END, f"Cliente en puerto {client_address[1]}: {data}\n")
+                    ventana.after(0, cuadro_texto_destino.yview_moveto, 1.0)
+                else:
+                    ventana.after(0, cuadro_texto_destino.insert, tk.END, f"Cliente en puerto {client_address[1]}: {data_decode}\n")
+                    ventana.after(0, cuadro_texto_destino.yview_moveto, 1.0)
     finally:
         connection.close()
         print(f"Conexion cerrada con {client_address[1]}")
         ventana.after(0, cuadro_texto_destino.insert, tk.END, f"Conexion cerrada con {client_address[1]}\n")
         ventana.after(0, cuadro_texto_destino.yview_moveto, 1.0)
-
 
 #Create server socket TCP
 def create_server(port):
@@ -49,7 +88,6 @@ def create_server(port):
         connection,client_address = server.accept()
         client_thread=threading.Thread(target=handle_client,args=(connection,client_address))
         client_thread.start()
-        
         
 
 # Función que se ejecutará al pulsar el botón
