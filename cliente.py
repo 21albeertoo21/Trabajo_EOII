@@ -9,7 +9,6 @@ def comprobar_usuario(new_user, lista_usuarios):
     if new_user in lista_usuarios:
         return False
     else:
-        lista_usuarios.append(new_user)
         return True
 
 def crear_cliente_ventana(conexion,usuario):
@@ -50,23 +49,6 @@ def mostrar_error_entero():
     tk.Label(ventana_no_entero, text="Por favor introduce un valor entero").grid(row=0, column=0, padx=20, pady=20)
     ventana_no_entero.mainloop()
 
-"""""
-def mostrar_fin_conexion():
-    ventana_fin_conexion = tk.Toplevel(ventana)
-    ventana_fin_conexion.title("Conexión finalizada")
-    ventana_fin_conexion.geometry("300x100")  
-
-    # Centrar la ventana de error respecto a la ventana principal
-    ventana_fin_conexion.transient(ventana)
-    ventana_fin_conexion.grab_set()
-    ventana_fin_conexion.update_idletasks()
-    x = ventana.winfo_x() + (ventana.winfo_width() // 2) - (ventana_fin_conexion.winfo_width() // 2)
-    y = ventana.winfo_y() + (ventana.winfo_height() // 2) - (ventana_fin_conexion.winfo_height() // 2)
-    ventana_fin_conexion.geometry(f"+{x}+{y}")
-
-    tk.Label(ventana_fin_conexion, text="Conexión finalizada").grid(row=0, column=0, padx=20, pady=20)
-    ventana_fin_conexion.mainloop()
-"""
 def boton_click_usuario():
     usuario = cuadro_texto_usuario.get()
     texto_IP = cuadro_texto_IP.get()
@@ -76,13 +58,12 @@ def boton_click_usuario():
             cuadro_texto_destino.insert(tk.END, f"Error: El usuario {usuario} ya está registrado. \n")
             cuadro_texto_destino.yview_moveto(1.0)
         else:
-            #texto_puerto_numero = int(texto_puerto)
-            hora_actual = datetime.datetime.now().strftime("%H:%M:%S")
-            cuadro_texto_destino.insert(tk.END, f"Creado cliente con nombre: [{usuario}] a las {hora_actual}.\n")
-            #Ajustar posición scrollbar para mostrar siempre el último texto
-            cuadro_texto_destino.yview_moveto(1.0)
             #Creamos el nuevo usuario
-            crear_cliente(texto_puerto, texto_IP, usuario)
+            if crear_cliente(texto_puerto, texto_IP, usuario) == True:
+                hora_actual = datetime.datetime.now().strftime("%H:%M:%S")
+                cuadro_texto_destino.insert(tk.END, f"Creado cliente con nombre: [{usuario}] a las {hora_actual}.\n")
+                #Ajustar posición scrollbar para mostrar siempre el último texto
+                cuadro_texto_destino.yview_moveto(1.0)
     except:
         mostrar_error_entero()
     
@@ -91,7 +72,7 @@ def boton_click_client(mensaje,cuadro_texto_destino_client,conexion,boton,usuari
     if mensaje.strip():
         if mensaje =="FIN":
             lista_usuarios.remove(usuario)
-            cuadro_texto_destino_client.insert(tk.END, "Finaliza conexion con el servidor \n")
+            cuadro_texto_destino_client.insert(tk.END, "Finaliza conexión con el servidor \n")
             cuadro_texto_destino_client.yview_moveto(1.0)
             enviar_mensaje(mensaje,conexion,boton)
             return
@@ -125,10 +106,14 @@ def crear_cliente(texto_puerto, texto_IP, usuario):
         #creamos un windows para cada cliente por lo que vamos a crear un hilo en cada caso
         client_thread = threading.Thread(target=crear_cliente_ventana,args=(conexion,usuario))  
         client_thread.start()
+        #agregamos el usuario a la lista de usuarios
+        lista_usuarios.append(usuario)
     except Exception as e:
         cuadro_texto_destino.insert(tk.END, f"Error al conectar con el servidor: {e}\n")
         cuadro_texto_destino.yview_moveto(1.0)
+        return False
     
+    return True
 
 def enviar_mensaje(texto, conexion, boton):
     try:
