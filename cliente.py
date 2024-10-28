@@ -12,7 +12,7 @@ def comprobar_usuario(new_user, lista_usuarios):
     else:
         return True
 
-def crear_cliente_ventana(conexion,usuario):
+def crear_cliente_ventana(conexion,usuario,puerto):
     # Creamos la ventana
     ventana_client = tk.Tk()
     ventana_client.title(f"Enviar mensajes desde: {usuario}")
@@ -21,7 +21,7 @@ def crear_cliente_ventana(conexion,usuario):
     cuadro_texto_mensaje = tk.Entry(ventana_client)
     cuadro_texto_mensaje.grid(row=0, column=1)
     #Creamos un botón
-    boton = tk.Button(ventana_client, text="Enviar mensaje", command=lambda: boton_click_client(cuadro_texto_mensaje.get(), cuadro_texto_destino_client,conexion,boton, usuario, ventana_client))
+    boton = tk.Button(ventana_client, text="Enviar mensaje", command=lambda: boton_click_client(cuadro_texto_mensaje.get(), cuadro_texto_destino_client,conexion,boton, usuario, ventana_client,puerto))
     boton.grid(row=1, column=1, columnspan=2)
     # Creamos un cuadro de texto que acepta varias líneas
     cuadro_texto_destino_client = tk.Text(ventana_client)
@@ -69,10 +69,10 @@ def boton_click_usuario():
         mostrar_error_entero()
     
 
-def boton_click_client(mensaje,cuadro_texto_destino_client,conexion,boton,usuario,ventana_client):
+def boton_click_client(mensaje,cuadro_texto_destino_client,conexion,boton,usuario,ventana_client,puerto):
     if mensaje.strip():
         if mensaje =="FIN":
-            lista_usuarios.remove(usuario)
+            lista_usuarios.remove({usuario,puerto})
             cuadro_texto_destino_client.insert(tk.END, "Finaliza conexión con el servidor \n")
             cuadro_texto_destino_client.yview_moveto(1.0)
             enviar_mensaje(mensaje,conexion,boton)
@@ -106,10 +106,10 @@ def crear_cliente(texto_puerto, texto_IP, usuario):
         #Enviar usuario
         conexion.send(usuario.encode())
         #creamos un windows para cada cliente por lo que vamos a crear un hilo en cada caso
-        client_thread = threading.Thread(target=crear_cliente_ventana,args=(conexion,usuario))  
+        client_thread = threading.Thread(target=crear_cliente_ventana,args=(conexion,usuario,puerto))  
         client_thread.start()
         #agregamos el usuario a la lista de usuarios
-        lista_usuarios.append(usuario)
+        lista_usuarios.append({usuario,puerto})
     except Exception as e:
         cuadro_texto_destino.insert(tk.END, f"Error al conectar con el servidor: {e}\n")
         cuadro_texto_destino.yview_moveto(1.0)
