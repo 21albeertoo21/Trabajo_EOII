@@ -8,6 +8,10 @@ import requests
 
 #Llave para poder utilizar la API de OpenWeatherMap para obtener la información del tiempo en valencia
 API_KEY = "cbf557829a16f6572809313ff5b76dd0"
+#Lista con los hilos de clientes
+numero_clientes={}
+# Crear un evento de parada global
+stop_event = threading.Event()
 
 def mostrar_error_entero():
     ventana_no_entero = tk.Toplevel(ventana)
@@ -67,6 +71,7 @@ def handle_client(connection, client_address):
             data_decode = data.decode()
             if data:
                 if data_decode == "FIN":
+                    numero_clientes[0]-=1
                     break
                 elif data_decode == "HORA":
                     hora_actual = datetime.datetime.now().strftime("%H:%M:%S")
@@ -87,6 +92,7 @@ def handle_client(connection, client_address):
 
 #Create server socket TCP
 def create_server(port):
+    numero_clientes[0]=0
     server = socket(AF_INET,SOCK_STREAM)
     server_address = ('127.0.0.1',port)
     server.bind(server_address)
@@ -94,19 +100,32 @@ def create_server(port):
     print("Servidor escuchando en el puerto: ",port)
     message= f"Servidor escuchando en el puerto: {port}"
     mensaje_por_ventana(message)
-    while True:
-        connection,client_address = server.accept()
-        client_thread=threading.Thread(target=handle_client,args=(connection,client_address))
-        client_thread.start()
-        
+     # Loop del  servidor mientras que no se le de al boton cerrar servidor
+    while not stop_event.is_set(): 
+        try:
+            server.settimeout(1.0)  # Timeout para verificar el evento de parada cada segundo
+            connection, client_address = server.accept()
+            client_thread = threading.Thread(target=handle_client, args=(connection, client_address))
+            client_thread.start()
+            numero_clientes[0]+=1
+        except timeout:
+            #solo se permite cerrar si no hay clientes
+            if numero_clientes[0] == 0:
+                boton_cerrar.config(state='normal')
+            else:
+                boton_cerrar.config(state='disabled')
+            continue  # vuelve al bucle checkeando stop_event
+    
+    #una vez le han dado al boton cerramos el servidor y mandamos un mensaje
+    server.close()
+    print("Servidor cerrado")
+    mensaje_por_ventana("Se ha cerrado el servidor")
 
 # Función que se ejecutará al pulsar el botón
 def boton_click():
     texto = cuadro_texto_puerto.get()
     try:
         numero = int(texto)
-        #cuadro_texto_destino.insert(tk.END, f"{numero}\n")
-        #cuadro_texto_destino.yview_moveto(1.0)
         # desactivar cuadro de texto y boton despues de iniciar el servidor
         cuadro_texto_puerto.config(state='disabled')
         boton.config(state='disabled')
@@ -116,8 +135,11 @@ def boton_click():
     except ValueError:
         mostrar_error_entero()
 
-
-
+def cerrar_servidor():
+    stop_event.set()
+    boton_cerrar.config(state='disabled')
+    ventana.after(5000, ventana.destroy)
+   
 
 if __name__ == '__main__':
     # Creamos la ventana
@@ -139,6 +161,12 @@ if __name__ == '__main__':
     scrollbar.grid(row=2, column=2, sticky=tk.NS)
     cuadro_texto_destino.config(yscrollcommand=scrollbar.set)
     scrollbar.config(command=cuadro_texto_destino.yview)
+    #Boton para cerrar el servidor
+    # Creamos el botón "Cerrar servidor" y lo colocamos debajo del cuadro de texto
+    boton_cerrar = tk.Button(ventana, text="Cerrar servidor", command=cerrar_servidor, font=("Arial", 12, "bold"))
+    boton_cerrar.grid(row=3, column=0, columnspan=2, padx=10, pady=10)
+    #Hasta que no se cree el servidor el boton estara desactivado
+    boton_cerrar.config(state='disabled')
     # Visualizamos la ventana
     ventana.mainloop()
     
