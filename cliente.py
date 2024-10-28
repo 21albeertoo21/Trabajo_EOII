@@ -3,6 +3,15 @@ import socket
 import datetime
 import threading
 
+lista_usuarios = []
+
+def comprobar_usuario(new_user, lista_usuarios):
+    if new_user in lista_usuarios:
+        return False
+    else:
+        lista_usuarios.append(new_user)
+        return True
+
 def crear_cliente_ventana(conexion,usuario):
     # Creamos la ventana
     ventana_client = tk.Tk()
@@ -12,7 +21,7 @@ def crear_cliente_ventana(conexion,usuario):
     cuadro_texto_mensaje = tk.Entry(ventana_client)
     cuadro_texto_mensaje.grid(row=0, column=1)
     #Creamos un botón
-    boton = tk.Button(ventana_client, text="Enviar mensaje", command=lambda: boton_click_client(cuadro_texto_mensaje.get(), cuadro_texto_destino_client,conexion,boton))
+    boton = tk.Button(ventana_client, text="Enviar mensaje", command=lambda: boton_click_client(cuadro_texto_mensaje.get(), cuadro_texto_destino_client,conexion,boton, usuario))
     boton.grid(row=1, column=1, columnspan=2)
     # Creamos un cuadro de texto que acepta varias líneas
     cuadro_texto_destino_client = tk.Text(ventana_client)
@@ -59,23 +68,29 @@ def mostrar_fin_conexion():
     ventana_fin_conexion.mainloop()
 """
 def boton_click_usuario():
-    texto = cuadro_texto_usuario.get()
+    usuario = cuadro_texto_usuario.get()
     texto_IP = cuadro_texto_IP.get()
     texto_puerto = cuadro_texto_puerto.get()
     try:
-        texto_puerto_numero = int(texto_puerto)
-        hora_actual = datetime.datetime.now().strftime("%H:%M:%S")
-        cuadro_texto_destino.insert(tk.END, f"Creado cliente con nombre: [{texto}] a las {hora_actual}.\n")
-        #Ajustar posición scrollbar para mostrar siempre el último texto
-        cuadro_texto_destino.yview_moveto(1.0)
+        if comprobar_usuario(usuario, lista_usuarios) == False: #usuario ya registrado
+            cuadro_texto_destino.insert(tk.END, f"Error: El usuario {usuario} ya está registrado. \n")
+            cuadro_texto_destino.yview_moveto(1.0)
+        else:
+            #texto_puerto_numero = int(texto_puerto)
+            hora_actual = datetime.datetime.now().strftime("%H:%M:%S")
+            cuadro_texto_destino.insert(tk.END, f"Creado cliente con nombre: [{usuario}] a las {hora_actual}.\n")
+            #Ajustar posición scrollbar para mostrar siempre el último texto
+            cuadro_texto_destino.yview_moveto(1.0)
+            #Creamos el nuevo usuario
+            crear_cliente(texto_puerto, texto_IP, usuario)
     except:
         mostrar_error_entero()
-         
-    crear_cliente(texto_puerto, texto_IP, texto)
+    
 
-def boton_click_client(mensaje,cuadro_texto_destino_client,conexion,boton):
+def boton_click_client(mensaje,cuadro_texto_destino_client,conexion,boton,usuario):
     if mensaje.strip():
         if mensaje =="FIN":
+            lista_usuarios.remove(usuario)
             cuadro_texto_destino_client.insert(tk.END, "Finaliza conexion con el servidor \n")
             cuadro_texto_destino_client.yview_moveto(1.0)
             enviar_mensaje(mensaje,conexion,boton)
@@ -89,35 +104,39 @@ def boton_click_client(mensaje,cuadro_texto_destino_client,conexion,boton):
             cuadro_texto_destino_client.insert(tk.END, "Error: tiempo de espera excedido. \n")
             cuadro_texto_destino_client.yview_moveto(1.0)
             boton.config(state=tk.DISABLED)  # Deshabilitar el botón si hay timeout
-           # mostrar_fin_conexion()
+        # mostrar_fin_conexion()
         except  Exception as e:
             cuadro_texto_destino_client.insert(tk.END, f"Error: {e} \n")
             cuadro_texto_destino_client.yview_moveto(1.0)
             boton.config(state=tk.DISABLED)  # Deshabilitar el botón si ocurre otro error
             #mostrar_fin_conexion()
     
-def crear_cliente(texto_puerto, texto_IP, texto):
-    #conexion con el servidor
-    conexion = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    puerto = int(texto_puerto)
-    direccion_IP = texto_IP
-    conexion.connect((direccion_IP, puerto))
-    #Establecer timeout para la recepción de datos
-    conexion.settimeout(5)
-    #Enviar usuario
-    conexion.send(texto.encode())
-    #creamos un windows para cada cliente por lo que vamos a crear un hilo en cada caso
-    client_thread = threading.Thread(target=crear_cliente_ventana,args=(conexion,texto))  
-    client_thread.start() 
+def crear_cliente(texto_puerto, texto_IP, usuario):
+    try:
+        #conexion con el servidor
+        conexion = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        puerto = int(texto_puerto)
+        direccion_IP = texto_IP
+        conexion.connect((direccion_IP, puerto))
+        #Establecer timeout para la recepción de datos
+        conexion.settimeout(5)
+        #Enviar usuario
+        conexion.send(usuario.encode())
+        #creamos un windows para cada cliente por lo que vamos a crear un hilo en cada caso
+        client_thread = threading.Thread(target=crear_cliente_ventana,args=(conexion,usuario))  
+        client_thread.start()
+    except Exception as e:
+        cuadro_texto_destino.insert(tk.END, f"Error al conectar con el servidor: {e}\n")
+        cuadro_texto_destino.yview_moveto(1.0)
     
 
-def enviar_mensaje(texto, conexion,boton):
+def enviar_mensaje(texto, conexion, boton):
     try:
         conexion.send(texto.encode())
     except Exception as e:
         print(f"Error al enviar mensaje: {e}")
         boton.config(state=tk.DISABLED)  # Deshabilitar el botón si ocurre otro error
-       # mostrar_fin_conexion()
+    # mostrar_fin_conexion()
     if texto == "FIN":
         boton.config(state=tk.DISABLED)  # Deshabilitar el botón al enviar "FIN"
         #mostrar_fin_conexion()
