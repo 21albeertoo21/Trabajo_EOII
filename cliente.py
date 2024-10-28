@@ -2,6 +2,7 @@ import tkinter as tk
 import socket
 import datetime
 import threading
+import time
 
 lista_usuarios = []
 
@@ -20,7 +21,7 @@ def crear_cliente_ventana(conexion,usuario):
     cuadro_texto_mensaje = tk.Entry(ventana_client)
     cuadro_texto_mensaje.grid(row=0, column=1)
     #Creamos un botón
-    boton = tk.Button(ventana_client, text="Enviar mensaje", command=lambda: boton_click_client(cuadro_texto_mensaje.get(), cuadro_texto_destino_client,conexion,boton, usuario))
+    boton = tk.Button(ventana_client, text="Enviar mensaje", command=lambda: boton_click_client(cuadro_texto_mensaje.get(), cuadro_texto_destino_client,conexion,boton, usuario, ventana_client))
     boton.grid(row=1, column=1, columnspan=2)
     # Creamos un cuadro de texto que acepta varias líneas
     cuadro_texto_destino_client = tk.Text(ventana_client)
@@ -68,13 +69,14 @@ def boton_click_usuario():
         mostrar_error_entero()
     
 
-def boton_click_client(mensaje,cuadro_texto_destino_client,conexion,boton,usuario):
+def boton_click_client(mensaje,cuadro_texto_destino_client,conexion,boton,usuario,ventana_client):
     if mensaje.strip():
         if mensaje =="FIN":
             lista_usuarios.remove(usuario)
             cuadro_texto_destino_client.insert(tk.END, "Finaliza conexión con el servidor \n")
             cuadro_texto_destino_client.yview_moveto(1.0)
             enviar_mensaje(mensaje,conexion,boton)
+            ventana_client.after(5000, ventana_client.destroy)
             return
         try:
             hora_actual = datetime.datetime.now().strftime("%H:%M:%S")
