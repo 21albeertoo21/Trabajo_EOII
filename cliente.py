@@ -2,7 +2,6 @@ import tkinter as tk
 import socket
 import datetime
 import threading
-import time
 
 lista_usuarios = []
 
