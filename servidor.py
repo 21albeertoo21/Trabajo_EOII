@@ -56,7 +56,7 @@ def mensaje_por_ventana(message):
     ventana.after(0, cuadro_texto_destino.yview_moveto, 1.0)
 
 def handle_client(connection, client_address):
-    print(f"conexion establecida con puerto {client_address[0]}")
+    print(f"conexion establecida con puerto: {client_address[1]}")
     try:
         usuario_coded = connection.recv(1024)
         usuario = usuario_coded.decode()
@@ -72,7 +72,7 @@ def handle_client(connection, client_address):
                     hora_actual = datetime.datetime.now().strftime("%H:%M:%S")
                     message = f"{usuario}: {hora_actual}"
                     mensaje_por_ventana(message)
-                elif data_decode == "Tiempo en Valencia hoy":
+                elif data_decode == "TIEMPO":
                     tiempo_valencia_message = obtener_clima_valencia()
                     message = f"{usuario}: {tiempo_valencia_message}"
                     mensaje_por_ventana(message)
@@ -92,7 +92,7 @@ def create_server(port):
     server.bind(server_address)
     server.listen(1)
     print("Servidor escuchando en el puerto: ",port)
-    message= f"Servidor escuchando en el puerto{port}"
+    message= f"Servidor escuchando en el puerto: {port}"
     mensaje_por_ventana(message)
     while True:
         connection,client_address = server.accept()
