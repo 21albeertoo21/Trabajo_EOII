@@ -18,10 +18,9 @@ def eliminar_user(dic_users_and_ports, new_user, puerto):
             del dic_users_and_ports[puerto]
 
 def comprobar_usuario(dic_users_and_ports, new_user, puerto):
-    if new_user in dic_users_and_ports[puerto] or len(dic_users_and_ports) == 0:
+    if puerto in dic_users_and_ports and new_user in dic_users_and_ports[puerto]:
         return False
-    else: 
-        return True
+    return True
     
 def crear_cliente_ventana(conexion,usuario,puerto):
     # Creamos la ventana
@@ -65,8 +64,9 @@ def boton_click_usuario():
     usuario = cuadro_texto_usuario.get()
     texto_IP = cuadro_texto_IP.get()
     texto_puerto = cuadro_texto_puerto.get()
+    puerto = int(texto_puerto)
     try:
-        if comprobar_usuario(dic_users_and_ports, usuario, int(texto_puerto)) == False: #usuario ya registrado
+        if comprobar_usuario(dic_users_and_ports, usuario, puerto) == False: #usuario ya registrado
             cuadro_texto_destino.insert(tk.END, f"Error: El usuario {usuario} ya está registrado. \n")
             cuadro_texto_destino.yview_moveto(1.0)
         else:
