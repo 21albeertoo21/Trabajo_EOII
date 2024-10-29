@@ -3,14 +3,26 @@ import socket
 import datetime
 import threading
 
-lista_usuarios = []
+dic_users_and_ports = {} #creamos un diccionario vacío
 
-def comprobar_usuario(new_user, lista_usuarios):
-    if new_user in lista_usuarios:
+def insertar_user(dic_users_and_ports, new_user, puerto):
+    if puerto not in dic_users_and_ports:
+        dic_users_and_ports[puerto] = [] #Si el puerto no está en el diccionario creamos una lista vacía en la clave puerto
+    #insertamos el usuario en la clave puerto correcta
+    dic_users_and_ports[puerto].append(new_user)
+
+def eliminar_user(dic_users_and_ports, new_user, puerto):
+    if puerto in dic_users_and_ports and new_user in dic_users_and_ports[puerto]:
+        dic_users_and_ports[puerto].remove(new_user)
+        if not dic_users_and_ports[puerto]:  # Si la lista está vacía, elimina la clave del diccionario
+            del dic_users_and_ports[puerto]
+
+def comprobar_usuario(dic_users_and_ports, new_user, puerto):
+    if new_user in dic_users_and_ports[puerto] or len(dic_users_and_ports) == 0:
         return False
-    else:
+    else: 
         return True
-
+    
 def crear_cliente_ventana(conexion,usuario,puerto):
     # Creamos la ventana
     ventana_client = tk.Tk()
@@ -54,7 +66,7 @@ def boton_click_usuario():
     texto_IP = cuadro_texto_IP.get()
     texto_puerto = cuadro_texto_puerto.get()
     try:
-        if comprobar_usuario(usuario, lista_usuarios) == False: #usuario ya registrado
+        if comprobar_usuario(dic_users_and_ports, usuario, int(texto_puerto)) == False: #usuario ya registrado
             cuadro_texto_destino.insert(tk.END, f"Error: El usuario {usuario} ya está registrado. \n")
             cuadro_texto_destino.yview_moveto(1.0)
         else:
@@ -71,7 +83,7 @@ def boton_click_usuario():
 def boton_click_client(mensaje,cuadro_texto_destino_client,conexion,boton,usuario,ventana_client,puerto):
     if mensaje.strip():
         if mensaje =="FIN":
-            lista_usuarios.remove({usuario,puerto})
+            eliminar_user(dic_users_and_ports, usuario, puerto)
             cuadro_texto_destino_client.insert(tk.END, "Finaliza conexión con el servidor \n")
             cuadro_texto_destino_client.yview_moveto(1.0)
             enviar_mensaje(mensaje,conexion,boton)
@@ -107,8 +119,8 @@ def crear_cliente(texto_puerto, texto_IP, usuario):
         #creamos un windows para cada cliente por lo que vamos a crear un hilo en cada caso
         client_thread = threading.Thread(target=crear_cliente_ventana,args=(conexion,usuario,puerto))  
         client_thread.start()
-        #agregamos el usuario a la lista de usuarios
-        lista_usuarios.append({usuario,puerto})
+        #agregamos el usuario a la lista de usuarios con clave = puerto
+        insertar_user(dic_users_and_ports, usuario, puerto)
     except Exception as e:
         cuadro_texto_destino.insert(tk.END, f"Error al conectar con el servidor: {e}\n")
         cuadro_texto_destino.yview_moveto(1.0)

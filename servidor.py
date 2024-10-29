@@ -9,7 +9,7 @@ import requests
 #Llave para poder utilizar la API de OpenWeatherMap para obtener la información del tiempo en valencia
 API_KEY = "cbf557829a16f6572809313ff5b76dd0"
 #Lista con los hilos de clientes
-numero_clientes={}
+numero_clientes={} #cambiar
 # Crear un evento de parada global
 stop_event = threading.Event()
 
@@ -100,7 +100,7 @@ def create_server(port):
     print("Servidor escuchando en el puerto: ",port)
     message= f"Servidor escuchando en el puerto: {port}"
     mensaje_por_ventana(message)
-     # Loop del  servidor mientras que no se le de al boton cerrar servidor
+    # Loop del  servidor mientras que no se le de al boton cerrar servidor
     while not stop_event.is_set(): 
         try:
             server.settimeout(1.0)  # Timeout para verificar el evento de parada cada segundo
@@ -139,7 +139,6 @@ def cerrar_servidor():
     stop_event.set()
     boton_cerrar.config(state='disabled')
     ventana.after(5000, ventana.destroy)
-   
 
 if __name__ == '__main__':
     # Creamos la ventana
