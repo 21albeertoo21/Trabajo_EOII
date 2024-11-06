@@ -52,7 +52,7 @@ def escuchar_mensajes(conexion, cuadro_texto_destino_client, ventana_client,usua
 def crear_cliente_ventana(conexion,usuario,puerto):
     # Creamos la ventana
     ventana_client = tk.Tk()
-    ventana_client.title(f"Enviar mensajes desde: {usuario}")
+    ventana_client.title(f"Enviar mensajes desde: {usuario} al servidor de puerto: {puerto}")
     # Creamos las etiquetas necesarias
     tk.Label(ventana_client, text='Mensaje a enviar:').grid(row=0, column=0)
     cuadro_texto_mensaje = tk.Entry(ventana_client)
