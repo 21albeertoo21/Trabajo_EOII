@@ -5,13 +5,114 @@ import sys
 import datetime 
 import threading
 import requests
-
+#CONSTANTE DE tiempo hasta cerrar server windows in miliseconds
+TIME_BEFORE_CLOSE_SERVER_WINDOWS = 10000
 #Llave para poder utilizar la API de OpenWeatherMap para obtener la información del tiempo en valencia
 API_KEY = "cbf557829a16f6572809313ff5b76dd0"
-#Lista con los hilos de clientes
-numero_clientes={} #cambiar
+# Lista para almacenar clientes conectados (sockets) y sus direcciones (IP, puerto)
+clientes_conectados = []
 # Crear un evento de parada global
 stop_event = threading.Event()
+#Muxtex para evitar condiciones de carrera en clientes conectados
+clientes_lock = threading.Lock()
+
+def handle_client(connection, client_address):
+    global clientes_conectados
+    with clientes_lock:
+        clientes_conectados.append((connection, client_address))
+    print(f"conexion establecida con puerto: {client_address[1]}")
+    #desactivar timeout de la conexion
+    connection.settimeout(None)
+    try:
+        usuario_coded = connection.recv(1024)
+        usuario = usuario_coded.decode()
+        message=f"Conexion establecida con {usuario}"
+        mensaje_por_ventana(message)
+        while True:
+            data = connection.recv(1024)
+            data_decode = data.decode()
+            if data:
+                if data_decode == "FIN":
+                    break
+                elif data_decode == "HORA":
+                    hora_actual = datetime.datetime.now().strftime("%H:%M:%S")
+                    message = f"{usuario}: {hora_actual}"
+                    mensaje_por_ventana(message)
+                elif data_decode == "TIEMPO":
+                    tiempo_valencia_message = obtener_clima_valencia()
+                    message = f"{usuario}: {tiempo_valencia_message}"
+                    mensaje_por_ventana(message)
+                else:
+                    message = f"{usuario}: {data_decode}"
+                    mensaje_por_ventana(message)
+    except (ConnectionAbortedError, ConnectionResetError):
+        print(f"Conexión finalizada debido a que el servidor se cierra con {client_address}")
+    finally:
+        # Verificar si la conexión sigue en la lista antes de intentar eliminarla
+        with clientes_lock:
+            if (connection, client_address) in clientes_conectados:
+                clientes_conectados.remove((connection, client_address))
+        print(f"Conexión cerrada con {client_address[1]}")
+        mensaje_por_ventana(f"Conexión cerrada con {usuario}")
+
+def close_all_connections():
+    global clientes_conectados
+    # Cerrar conexiones de clientes y enviar mensaje de cierre
+    with clientes_lock:
+        for conn, addr in clientes_conectados:
+            try:
+                conn.send("CIERRE DE SERVIDOR".encode())
+                conn.close()
+            except Exception as e:
+                print(f"Error al enviar mensaje de cierre a {addr}: {e}")
+
+#Create server socket TCP
+def create_server(port):
+    global clientes_conectados
+    server = socket(AF_INET,SOCK_STREAM)
+    server_address = ('127.0.0.1',port)
+    server.bind(server_address)
+    server.listen(1)
+    print("Servidor escuchando en el puerto: ",port)
+    message= f"Servidor escuchando en el puerto: {port}"
+    mensaje_por_ventana(message)
+    # Loop del  servidor mientras que no se le de al boton cerrar servidor
+    while not stop_event.is_set(): 
+        try:
+            server.settimeout(1.0)  # Timeout para verificar el evento de parada cada segundo
+            connection, client_address = server.accept()
+            client_thread = threading.Thread(target=handle_client, args=(connection, client_address))
+            client_thread.start()
+        except timeout:
+            continue
+    # Cerrar conexiones de clientes y enviar mensaje de cierre
+    close_all_connections()
+    #cerramos finalmente el servidor
+    if(len(clientes_conectados) == 0):
+        server.close()
+        print("Servidor cerrado")
+        mensaje_por_ventana("Se ha cerrado el servidor")
+
+# Función que se ejecutará al pulsar el botón
+def boton_click():
+    texto = cuadro_texto_puerto.get()
+    try:
+        numero = int(texto)
+        # desactivar cuadro de texto y boton despues de iniciar el servidor
+        cuadro_texto_puerto.config(state='disabled')
+        boton.config(state='disabled')
+        #activar boton para cerrar el servidor
+        boton_cerrar.config(state='normal')
+        #crear hilo del servidor
+        server_thread = threading.Thread(target=create_server,args=(numero,))  
+        server_thread.start() 
+    except ValueError:
+        mostrar_error_entero()
+
+def cerrar_servidor():
+    stop_event.set()
+    boton_cerrar.config(state='disabled')
+    ventana.after(TIME_BEFORE_CLOSE_SERVER_WINDOWS, ventana.destroy)
 
 def mostrar_error_entero():
     ventana_no_entero = tk.Toplevel(ventana)
@@ -57,89 +158,9 @@ def obtener_clima_valencia():
 
 def mensaje_por_ventana(message):
     ventana.after(0, cuadro_texto_destino.insert, tk.END, f"{message}\n")
-    ventana.after(0, cuadro_texto_destino.yview_moveto, 1.0)
-
-def handle_client(connection, client_address):
-    print(f"conexion establecida con puerto: {client_address[1]}")
-    try:
-        usuario_coded = connection.recv(1024)
-        usuario = usuario_coded.decode()
-        message=f"Conexion establecida con {usuario}"
-        mensaje_por_ventana(message)
-        while True:
-            data = connection.recv(1024)
-            data_decode = data.decode()
-            if data:
-                if data_decode == "FIN":
-                    numero_clientes[0]-=1
-                    break
-                elif data_decode == "HORA":
-                    hora_actual = datetime.datetime.now().strftime("%H:%M:%S")
-                    message = f"{usuario}: {hora_actual}"
-                    mensaje_por_ventana(message)
-                elif data_decode == "TIEMPO":
-                    tiempo_valencia_message = obtener_clima_valencia()
-                    message = f"{usuario}: {tiempo_valencia_message}"
-                    mensaje_por_ventana(message)
-                else:
-                    message = f"{usuario}: {data_decode}"
-                    mensaje_por_ventana(message)
-    finally:
-        connection.close()
-        print(f"Conexion cerrada con {client_address[1]}")
-        message=f"Conexion cerrada con {usuario}"
-        mensaje_por_ventana(message)
-
-#Create server socket TCP
-def create_server(port):
-    numero_clientes[0]=0
-    server = socket(AF_INET,SOCK_STREAM)
-    server_address = ('127.0.0.1',port)
-    server.bind(server_address)
-    server.listen(1)
-    print("Servidor escuchando en el puerto: ",port)
-    message= f"Servidor escuchando en el puerto: {port}"
-    mensaje_por_ventana(message)
-    # Loop del  servidor mientras que no se le de al boton cerrar servidor
-    while not stop_event.is_set(): 
-        try:
-            server.settimeout(1.0)  # Timeout para verificar el evento de parada cada segundo
-            connection, client_address = server.accept()
-            client_thread = threading.Thread(target=handle_client, args=(connection, client_address))
-            client_thread.start()
-            numero_clientes[0]+=1
-        except timeout:
-            #solo se permite cerrar si no hay clientes
-            if numero_clientes[0] == 0:
-                boton_cerrar.config(state='normal')
-            else:
-                boton_cerrar.config(state='disabled')
-            continue  # vuelve al bucle checkeando stop_event
+    ventana.after(0, cuadro_texto_destino.yview_moveto, 1.0)    
     
-    #una vez le han dado al boton cerramos el servidor y mandamos un mensaje
-    server.close()
-    print("Servidor cerrado")
-    mensaje_por_ventana("Se ha cerrado el servidor")
-
-# Función que se ejecutará al pulsar el botón
-def boton_click():
-    texto = cuadro_texto_puerto.get()
-    try:
-        numero = int(texto)
-        # desactivar cuadro de texto y boton despues de iniciar el servidor
-        cuadro_texto_puerto.config(state='disabled')
-        boton.config(state='disabled')
-        #crear hilo del servidor
-        server_thread = threading.Thread(target=create_server,args=(numero,))  
-        server_thread.start() 
-    except ValueError:
-        mostrar_error_entero()
-
-def cerrar_servidor():
-    stop_event.set()
-    boton_cerrar.config(state='disabled')
-    ventana.after(5000, ventana.destroy)
-
+    
 if __name__ == '__main__':
     # Creamos la ventana
     ventana = tk.Tk()
@@ -168,8 +189,4 @@ if __name__ == '__main__':
     boton_cerrar.config(state='disabled')
     # Visualizamos la ventana
     ventana.mainloop()
-    
-
-    
-    
     

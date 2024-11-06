@@ -4,24 +4,51 @@ import datetime
 import threading
 
 dic_users_and_ports = {} #creamos un diccionario vacío
-
+mutex = threading.Lock() #mutex para evitar concurrencia
 def insertar_user(dic_users_and_ports, new_user, puerto):
-    if puerto not in dic_users_and_ports:
-        dic_users_and_ports[puerto] = [] #Si el puerto no está en el diccionario creamos una lista vacía en la clave puerto
-    #insertamos el usuario en la clave puerto correcta
-    dic_users_and_ports[puerto].append(new_user)
+    with mutex:
+        if puerto not in dic_users_and_ports:
+            dic_users_and_ports[puerto] = [] #Si el puerto no está en el diccionario creamos una lista vacía en la clave puerto
+        #insertamos el usuario en la clave puerto correcta
+        dic_users_and_ports[puerto].append(new_user)
 
 def eliminar_user(dic_users_and_ports, new_user, puerto):
-    if puerto in dic_users_and_ports and new_user in dic_users_and_ports[puerto]:
-        dic_users_and_ports[puerto].remove(new_user)
-        if not dic_users_and_ports[puerto]:  # Si la lista está vacía, elimina la clave del diccionario
-            del dic_users_and_ports[puerto]
+    with mutex:
+        if puerto in dic_users_and_ports and new_user in dic_users_and_ports[puerto]:
+            dic_users_and_ports[puerto].remove(new_user)
+            if not dic_users_and_ports[puerto]:  # Si la lista está vacía, elimina la clave del diccionario
+                del dic_users_and_ports[puerto]
 
 def comprobar_usuario(dic_users_and_ports, new_user, puerto):
-    if puerto in dic_users_and_ports and new_user in dic_users_and_ports[puerto]:
-        return False
-    return True
+    with mutex:
+        if puerto in dic_users_and_ports and new_user in dic_users_and_ports[puerto]:
+            return False
+        return True
     
+    
+#Escucha mensajes del servidor en un hilo separado.
+def escuchar_mensajes(conexion, cuadro_texto_destino_client, ventana_client,usuario,puerto):
+    
+    #desactivar timeout de la conexion
+    conexion.settimeout(None)
+    while True:
+        try:
+            data = conexion.recv(1024)
+            if not data:
+                break
+            mensaje = data.decode()
+            print(f"{usuario}: ha recibido cerrar la conexion")
+            if mensaje == "CIERRE DE SERVIDOR":
+                cuadro_texto_destino_client.insert(tk.END, "Servidor cerrado. Cerrando cliente...\n")
+                cuadro_texto_destino_client.yview_moveto(1.0)
+                eliminar_user(dic_users_and_ports, usuario, puerto)
+                ventana_client.after(2000, ventana_client.destroy)  # Cierra la ventana después de 2 segundos
+                break
+            else:
+                break
+        except socket.error as e:
+            print(f"Error al recibir datos: {e}")
+            break
 def crear_cliente_ventana(conexion,usuario,puerto):
     # Creamos la ventana
     ventana_client = tk.Tk()
@@ -41,6 +68,10 @@ def crear_cliente_ventana(conexion,usuario,puerto):
     scrollbar_client.grid(row=2, column=2, sticky=tk.NS)
     cuadro_texto_destino_client.config(yscrollcommand=scrollbar_client.set)
     scrollbar_client.config(command=cuadro_texto_destino_client.yview)
+    
+     # Inicia un hilo para escuchar mensajes del servidor
+    threading.Thread(target=escuchar_mensajes, args=(conexion, cuadro_texto_destino_client, ventana_client,usuario,puerto), daemon=True).start()
+    
     # Visualizamos la ventana
     ventana_client.mainloop()
     
@@ -70,7 +101,7 @@ def boton_click_usuario():
             cuadro_texto_destino.insert(tk.END, f"Error: El usuario {usuario} ya está registrado. \n")
             cuadro_texto_destino.yview_moveto(1.0)
         else:
-            #Creamos el nuevo usuario
+           #Creamos el nuevo usuario
             if crear_cliente(texto_puerto, texto_IP, usuario) == True:
                 hora_actual = datetime.datetime.now().strftime("%H:%M:%S")
                 cuadro_texto_destino.insert(tk.END, f"Creado cliente con nombre: [{usuario}] a las {hora_actual}.\n")
@@ -84,6 +115,7 @@ def boton_click_client(mensaje,cuadro_texto_destino_client,conexion,boton,usuari
     if mensaje.strip():
         if mensaje =="FIN":
             eliminar_user(dic_users_and_ports, usuario, puerto)
+            print(f"{usuario}: Finalizó conexión con el servidor\n")
             cuadro_texto_destino_client.insert(tk.END, "Finaliza conexión con el servidor \n")
             cuadro_texto_destino_client.yview_moveto(1.0)
             enviar_mensaje(mensaje,conexion,boton)
@@ -134,10 +166,8 @@ def enviar_mensaje(texto, conexion, boton):
     except Exception as e:
         print(f"Error al enviar mensaje: {e}")
         boton.config(state=tk.DISABLED)  # Deshabilitar el botón si ocurre otro error
-    # mostrar_fin_conexion()
     if texto == "FIN":
         boton.config(state=tk.DISABLED)  # Deshabilitar el botón al enviar "FIN"
-        #mostrar_fin_conexion()
 
 if __name__ == '__main__':
     # Creamos la ventana
