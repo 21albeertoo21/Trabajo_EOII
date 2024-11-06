@@ -3,24 +3,28 @@ import socket
 import datetime
 import threading
 
+ventanas = [] #lista de ventanas abiertas
+ventanas_flags ={} #diccionario de flags(true,false) para cada ventana en caso de false eliminar ventana
 dic_users_and_ports = {} #creamos un diccionario vacío
-mutex = threading.Lock() #mutex para evitar concurrencia
+user_mutex = threading.Lock() #user_mutex para evitar concurrencia
+ventanas_mutex = threading.Lock() #ventanas_mutex para evitar concurrencia
+
 def insertar_user(dic_users_and_ports, new_user, puerto):
-    with mutex:
+    with user_mutex:
         if puerto not in dic_users_and_ports:
             dic_users_and_ports[puerto] = [] #Si el puerto no está en el diccionario creamos una lista vacía en la clave puerto
         #insertamos el usuario en la clave puerto correcta
         dic_users_and_ports[puerto].append(new_user)
 
 def eliminar_user(dic_users_and_ports, new_user, puerto):
-    with mutex:
+    with user_mutex:
         if puerto in dic_users_and_ports and new_user in dic_users_and_ports[puerto]:
             dic_users_and_ports[puerto].remove(new_user)
             if not dic_users_and_ports[puerto]:  # Si la lista está vacía, elimina la clave del diccionario
                 del dic_users_and_ports[puerto]
 
 def comprobar_usuario(dic_users_and_ports, new_user, puerto):
-    with mutex:
+    with user_mutex:
         if puerto in dic_users_and_ports and new_user in dic_users_and_ports[puerto]:
             return False
         return True
@@ -42,7 +46,8 @@ def escuchar_mensajes(conexion, cuadro_texto_destino_client, ventana_client,usua
                 cuadro_texto_destino_client.insert(tk.END, "Servidor cerrado. Cerrando cliente...\n")
                 cuadro_texto_destino_client.yview_moveto(1.0)
                 eliminar_user(dic_users_and_ports, usuario, puerto)
-                ventana_client.after(2000, ventana_client.destroy)  # Cierra la ventana después de 2 segundos
+                with ventanas_mutex:
+                    ventanas_flags[ventana_client] = False  # Marcar la ventana como cerrada
                 break
             else:
                 break
@@ -72,9 +77,31 @@ def crear_cliente_ventana(conexion,usuario,puerto):
      # Inicia un hilo para escuchar mensajes del servidor
     threading.Thread(target=escuchar_mensajes, args=(conexion, cuadro_texto_destino_client, ventana_client,usuario,puerto), daemon=True).start()
     
+    #guardamos la ventana y su flag
+    with ventanas_mutex:
+        ventanas.append(ventana_client)
+        ventanas_flags[ventana_client] = True
     # Visualizamos la ventana
     ventana_client.mainloop()
     
+def borrar_ventanas():
+    # Revisa y elimina ventanas cerradas
+    try:
+        with ventanas_mutex:
+            ventanas_a_destruir = []  # Lista para almacenar las ventanas a destruir
+
+            for ventana in ventanas[:]:  # Iterar sobre una copia de la lista para evitar modificarla directamente
+                if ventanas_flags.get(ventana, False) == False:  # Verifica si la ventana debe cerrarse
+                    print(f"Ventana marcada para destruir: {ventana}")
+                    ventanas_a_destruir.append(ventana)  # Agrega la ventana a la lista de destrucción
+
+            # Ahora destruimos las ventanas que necesitan ser cerradas
+            for ventana in ventanas_a_destruir:
+                ventana.after(500,ventana.destroy)  # Destruir la ventana
+                ventanas.remove(ventana)  # Eliminar la ventana de la lista
+                del ventanas_flags[ventana]  # Eliminar la entrada de flags
+    except Exception as e:
+        print(f"Error al destruir ventanas: {e}")
 def mostrar_error_entero():
     ventana_no_entero = tk.Toplevel(ventana)
     ventana_no_entero.title("Error")
@@ -119,8 +146,8 @@ def boton_click_client(mensaje,cuadro_texto_destino_client,conexion,boton,usuari
             cuadro_texto_destino_client.insert(tk.END, "Finaliza conexión con el servidor \n")
             cuadro_texto_destino_client.yview_moveto(1.0)
             enviar_mensaje(mensaje,conexion,boton)
-            ventana_client.after(5000, ventana_client.destroy)
-            return
+            with ventanas_mutex:
+                ventanas_flags[ventana_client] = False  # Marcar la ventana como cerrada           
         try:
             hora_actual = datetime.datetime.now().strftime("%H:%M:%S")
             cuadro_texto_destino_client.insert(tk.END, f"{hora_actual}: {mensaje}  \n")
@@ -168,7 +195,9 @@ def enviar_mensaje(texto, conexion, boton):
         boton.config(state=tk.DISABLED)  # Deshabilitar el botón si ocurre otro error
     if texto == "FIN":
         boton.config(state=tk.DISABLED)  # Deshabilitar el botón al enviar "FIN"
-
+def periodic_borrar_ventanas():
+    borrar_ventanas()
+    ventana.after(2000,periodic_borrar_ventanas)
 if __name__ == '__main__':
     # Creamos la ventana
     ventana = tk.Tk()
@@ -196,4 +225,8 @@ if __name__ == '__main__':
     cuadro_texto_destino.config(yscrollcommand=scrollbar.set)
     scrollbar.config(command=cuadro_texto_destino.yview)
     # Visualizamos la ventana
+    # Comprobar las ventanas cerradas cada 2 segundos
+    ventana.after(2000, periodic_borrar_ventanas)
     ventana.mainloop()
+    
+  
