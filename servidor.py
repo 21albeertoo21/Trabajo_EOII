@@ -52,9 +52,10 @@ def handle_client(connection, client_address):
         with clientes_lock:
             if (connection, client_address) in clientes_conectados:
                 clientes_conectados.remove((connection, client_address))
-                 #cerramos la conexion
-                connection.send("CIERRE DE SERVIDOR".encode())
-                connection.close()
+                # Verificamos si la conexión sigue abierta antes de enviar el mensaje de cierre
+                if connection.fileno() != -1:
+                        connection.send("CIERRE DE SERVIDOR".encode())
+                        connection.close()
         print(f"Conexión cerrada con {client_address[1]}")
         mensaje_por_ventana(f"Conexión cerrada con {usuario}")
 
@@ -66,7 +67,7 @@ def close_all_connections():
             try:
                 connection.send("CIERRE DE SERVIDOR".encode())
                 connection.close()
-                clientes_conectados.remove(connection,client_address)
+                clientes_conectados.remove((connection,client_address))
             except Exception as e:
                 print(f"Error al enviar mensaje de cierre a {client_address}: {e}")
 
