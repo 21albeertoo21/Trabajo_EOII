@@ -6,4 +6,6 @@ Ultimos cambios a hacer si dios quiere:
 
 (HECHO)3. Ha aparecido un bug de repente, lo que pasa es que cuando se empieza a toquitear que si abrir cerrar ventanas, como el cerrar ventanas no se hace desde el main, se ve que es posible que de fallos, y los da de vez en cuando. Solución: guardar desde el main en un vector todas las ventanas que se van creando y un booleano y que cada cierto tiempo compruebe desde el main el valor del booleano si estan a false significa que hay que eliminar la ventana y por tanto el main se encargara de eliminar la ventana exacta que toque, y eliminarla del vector, ademas valdria la pena utilizar un mutex para evitar problemas de concurrencia al añadir o eliminar ventanas.
 (HECHO)4. Tambien se podria poner un evento cuando se de a la x de la ventana para cerrar tambien la conexion ("Enviar FIN")
-5. NUevo problema: cuando le das al boton de cerrar servidor saltan muchos errores
+(HECHO) 5. NUevo problema: cuando le das al boton de cerrar servidor saltan muchos errores
+6. Testear un poco más aunq yo lo veo GOD
+7. Crear mini doc explicando un poco todo/ limpiar y hacer código más clean con comentarios que expliquen las funciones y un comentario al principio explicando un poco el funcionamiento de la clase
