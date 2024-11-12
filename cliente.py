@@ -114,10 +114,10 @@ def boton_click_usuario():
 def boton_click_client(mensaje,cuadro_texto_destino_client,conexion,boton,usuario,ventana_client,puerto):
     if mensaje.strip():
         if mensaje =="FIN":
-            eliminar_user(dic_users_and_ports, usuario, puerto)
             print(f"{usuario}: Finalizó conexión con el servidor\n")
             cuadro_texto_destino_client.insert(tk.END, "Finaliza conexión con el servidor \n")
             cuadro_texto_destino_client.yview_moveto(1.0)
+            eliminar_user(dic_users_and_ports, usuario, puerto)
             enviar_mensaje(mensaje,conexion,boton)
             ventana_client.after(5000, ventana_client.destroy)
             return
@@ -148,11 +148,12 @@ def crear_cliente(texto_puerto, texto_IP, usuario):
         conexion.settimeout(5)
         #Enviar usuario
         conexion.send(usuario.encode())
+        #agregamos el usuario a la lista de usuarios con clave = puerto
+        insertar_user(dic_users_and_ports, usuario, puerto)
         #creamos un windows para cada cliente por lo que vamos a crear un hilo en cada caso
         client_thread = threading.Thread(target=crear_cliente_ventana,args=(conexion,usuario,puerto))  
         client_thread.start()
-        #agregamos el usuario a la lista de usuarios con clave = puerto
-        insertar_user(dic_users_and_ports, usuario, puerto)
+        
     except Exception as e:
         cuadro_texto_destino.insert(tk.END, f"Error al conectar con el servidor: {e}\n")
         cuadro_texto_destino.yview_moveto(1.0)
