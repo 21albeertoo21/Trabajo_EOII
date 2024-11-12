@@ -49,13 +49,11 @@ def handle_client(connection, client_address):
     except (ConnectionAbortedError, ConnectionResetError):
         print(f"Conexión finalizada debido a que el servidor se cierra con el cliente{client_address}")
     finally:
-        print(f"He entrado al finally puerto: {client_address[1]}")
         # Verificar si la conexión sigue en la lista antes de intentar eliminarla
         with clientes_lock:
             if (connection, client_address) in clientes_conectados:
                 clientes_conectados.remove((connection, client_address))
                 # Verificamos si la conexión sigue abierta antes de enviar el mensaje de cierre
-                print(f"he eliminado puerto {client_address[1]}")
                 if connection.fileno() != -1:
                         connection.send("CIERRE DE SERVIDOR".encode())
                         connection.close()
@@ -64,27 +62,27 @@ def handle_client(connection, client_address):
 
 def close_all_connections():
     global clientes_conectados
-    print("entrar en close_all_connections")
     # Cerrar conexiones de clientes y enviar mensaje de cierre
     print_list_clientes_conectados()
-    with clientes_lock:
-        
+    with clientes_lock: 
         for connection, client_address in clientes_conectados:
             try:
-                print(f"enviando mensaje a puerto {client_address[1]}")
                 connection.send("CIERRE DE SERVIDOR".encode())
                 connection.close()
             except Exception as e:
                 print(f"Error al enviar mensaje de cierre a {client_address}: {e}")
         #despues de cerrar todas las conexiones vaciamos la lista
         clientes_conectados.clear()
-    print("una vez eliminado todos:")
     print_list_clientes_conectados()
 #Create server socket TCP
 def print_list_clientes_conectados():
     global clientes_conectados
     print("---------------------------")
+    
     with clientes_lock:
+        if(len(clientes_conectados) == 0):
+            print("**Ningun cliente conectado al servidor** ")
+            return
         print(f"tamaño de la lista: {len(clientes_conectados)}")
         for connection, client_address in clientes_conectados:
             print(f"cliente conectado: {client_address[1]}")
