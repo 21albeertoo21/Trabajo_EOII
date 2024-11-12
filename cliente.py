@@ -117,9 +117,7 @@ def boton_click_client(mensaje,cuadro_texto_destino_client,conexion,boton,usuari
             print(f"{usuario}: Finalizó conexión con el servidor\n")
             cuadro_texto_destino_client.insert(tk.END, "Finaliza conexión con el servidor \n")
             cuadro_texto_destino_client.yview_moveto(1.0)
-            eliminar_user(dic_users_and_ports, usuario, puerto)
             enviar_mensaje(mensaje,conexion,boton)
-            ventana_client.after(5000, ventana_client.destroy)
             return
         try:
             hora_actual = datetime.datetime.now().strftime("%H:%M:%S")
@@ -130,12 +128,10 @@ def boton_click_client(mensaje,cuadro_texto_destino_client,conexion,boton,usuari
             cuadro_texto_destino_client.insert(tk.END, "Error: tiempo de espera excedido. \n")
             cuadro_texto_destino_client.yview_moveto(1.0)
             boton.config(state=tk.DISABLED)  # Deshabilitar el botón si hay timeout
-        # mostrar_fin_conexion()
         except  Exception as e:
             cuadro_texto_destino_client.insert(tk.END, f"Error: {e} \n")
             cuadro_texto_destino_client.yview_moveto(1.0)
             boton.config(state=tk.DISABLED)  # Deshabilitar el botón si ocurre otro error
-            #mostrar_fin_conexion()
     
 def crear_cliente(texto_puerto, texto_IP, usuario):
     try:
