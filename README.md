@@ -14,8 +14,7 @@ El objetivo de este proyecto ha sido crear una comunicación cliente servidor qu
 Además hemos buscado la robustez dentro de la aplicación con el fin de que no se den casos extraordinarios durante la ejecución de la aplicación
 Modo de funcionamiento:
 1. Ejecuta el script del servidor y elige un puerto.
-2. Ejecuta el script del cliente, al crear el usuario necesitaras poner la ip, en este caso usamos la local_ip (127.0.0.1), el puerto del servidor activo
-    y el nombre del usuario.
+2. Ejecuta el script del cliente, al crear el usuario necesitaras poner la ip, en este caso usamos la local_ip (127.0.0.1), el puerto del servidor activo y el nombre del usuario.
 3. Una vez creado el usuario se te abrirá una nueva ventana en la que de titulo saldrá tu usuario y podrás enviar mensajes directos al usuario.
     los mensajes saldrán en el servidor con el usuario que los ha enviado.
     Las palabras claves son:
