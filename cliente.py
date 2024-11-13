@@ -5,6 +5,8 @@ import threading
 
 dic_users_and_ports = {} #creamos un diccionario vacío
 mutex = threading.Lock() #mutex para evitar concurrencia
+
+#funciones para insertar, eliminar y comprobar usuario en el diccionario
 def insertar_user(dic_users_and_ports, new_user, puerto):
     with mutex:
         if puerto not in dic_users_and_ports:
@@ -49,6 +51,8 @@ def escuchar_mensajes(conexion, cuadro_texto_destino_client, ventana_client,usua
         except socket.error as e:
             print(f"Error al recibir datos: {e}")
             break
+
+#Función para crear la ventana del cliente
 def crear_cliente_ventana(conexion,usuario,puerto):
     # Creamos la ventana
     ventana_client = tk.Tk()
@@ -69,12 +73,13 @@ def crear_cliente_ventana(conexion,usuario,puerto):
     cuadro_texto_destino_client.config(yscrollcommand=scrollbar_client.set)
     scrollbar_client.config(command=cuadro_texto_destino_client.yview)
     
-     # Inicia un hilo para escuchar mensajes del servidor
+    # Inicia un hilo para escuchar mensajes del servidor
     threading.Thread(target=escuchar_mensajes, args=(conexion, cuadro_texto_destino_client, ventana_client,usuario,puerto), daemon=True).start()
     
     # Visualizamos la ventana
     ventana_client.mainloop()
-    
+
+#Función para mostrar un mensaje de error por pantalla cuando no se introduce un valor entero en el puerto y en el IP
 def mostrar_error_entero():
     ventana_no_entero = tk.Toplevel(ventana)
     ventana_no_entero.title("Error")
@@ -91,6 +96,7 @@ def mostrar_error_entero():
     tk.Label(ventana_no_entero, text="Por favor introduce un valor entero").grid(row=0, column=0, padx=20, pady=20)
     ventana_no_entero.mainloop()
 
+#Función para comprobar si el usuario ya está registrado y si no lo está, crear un nuevo cliente
 def boton_click_usuario():
     usuario = cuadro_texto_usuario.get()
     texto_IP = cuadro_texto_IP.get()
@@ -101,7 +107,7 @@ def boton_click_usuario():
             cuadro_texto_destino.insert(tk.END, f"Error: El usuario {usuario} ya está registrado. \n")
             cuadro_texto_destino.yview_moveto(1.0)
         else:
-           #Creamos el nuevo usuario
+            #Creamos el nuevo usuario
             if crear_cliente(texto_puerto, texto_IP, usuario) == True:
                 hora_actual = datetime.datetime.now().strftime("%H:%M:%S")
                 cuadro_texto_destino.insert(tk.END, f"Creado cliente con nombre: [{usuario}] a las {hora_actual}.\n")
@@ -111,6 +117,7 @@ def boton_click_usuario():
         mostrar_error_entero()
     
 
+#Función para enviar mensajes al servidor
 def boton_click_client(mensaje,cuadro_texto_destino_client,conexion,boton,usuario,ventana_client,puerto):
     if mensaje.strip():
         if mensaje =="FIN":
@@ -133,6 +140,7 @@ def boton_click_client(mensaje,cuadro_texto_destino_client,conexion,boton,usuari
             cuadro_texto_destino_client.yview_moveto(1.0)
             boton.config(state=tk.DISABLED)  # Deshabilitar el botón si ocurre otro error
     
+#Función para crear un nuevo cliente
 def crear_cliente(texto_puerto, texto_IP, usuario):
     try:
         #conexion con el servidor
@@ -157,6 +165,7 @@ def crear_cliente(texto_puerto, texto_IP, usuario):
     
     return True
 
+#Función para enviar mensajes y deshabilitar el botón si hay un error o se envía "FIN"
 def enviar_mensaje(texto, conexion, boton):
     try:
         conexion.send(texto.encode())
