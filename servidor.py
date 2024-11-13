@@ -139,6 +139,9 @@ def boton_click():
     texto = cuadro_texto_puerto.get()
     try:
         numero = int(texto)
+        if numero < 0 or numero > 65535 :
+            print("El puerto tiene que estar en el rango de [0,65535]")
+            return
         # desactivar cuadro de texto y boton despues de iniciar el servidor
         cuadro_texto_puerto.config(state='disabled')
         boton.config(state='disabled')
