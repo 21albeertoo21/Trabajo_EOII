@@ -22,7 +22,7 @@ Modo de funcionamiento:
     FIN-> Finaliza la conexion con el servidor
     HORA-> El servidor devuelve la hora actual
     TIEMPO -> El servidor guiandose de una web de tiempo, devuelve el tiempo actual en Valencia (temperatura)
-4. Como ultimo puedas clickar el botón cerrar servidor de la ventana servidor, este se encargará de cerrar todas las conexiones con los     
+4. Como ultimo puedas pulsar el botón cerrar servidor de la ventana servidor, este se encargará de cerrar todas las conexiones con los     
      clientes,   y de eliminar la ventana del servidor terminando la ejecución del programa
 
      Además la aplicación permite que te crees más de un servidor y que puedas asignar los usuarios a distintos servidores.

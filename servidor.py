@@ -5,6 +5,7 @@ import sys
 import datetime 
 import threading
 import requests
+
 #CONSTANTE DE tiempo hasta cerrar server windows in miliseconds
 TIME_BEFORE_CLOSE_SERVER_WINDOWS = 10000
 #Llave para poder utilizar la API de OpenWeatherMap para obtener la información del tiempo en valencia
@@ -16,6 +17,16 @@ stop_event = threading.Event()
 #Muxtex para evitar condiciones de carrera en clientes conectados
 clientes_lock = threading.Lock()
 
+#El proceso de las funciones es el siguiente: se ejecuta el main creando la ventana principal,
+#Se vincula la función botón_click a cuando se pulsa el botón de crear servidor, esta función se encarga de crear un hilo vinculado a la función create_server
+#Create_server se encarga de crear el servidor y se queda escuchando para nuevas conexiones, en el caso de que haya alguna creará un nuevo hilo vinculado a handle_client
+#Handle_client se encarga de manejar la comunicación con el cliente recibiendo los mensajes correspondientes y checkeando que una vez acabe el hilo se haya cerrado la conexión con el cliente
+#Además contamos con otras funciones como Close_all_connections que se encarga de usando la lista de clientes conectados cerrar todas estas conexiones
+
+
+
+#Añade al cliente en la lista de clientes conectados y espera a recibir mensajes de este para imprimirlos por la ventana
+#cuenta con un finally en el que si salido del bucle todavía no se ha eliminado la conexión con el cliente la cierra, y la elimina de la lista
 def handle_client(connection, client_address):
     global clientes_conectados
     with clientes_lock:
@@ -46,6 +57,7 @@ def handle_client(connection, client_address):
                 else:
                     message = f"{usuario}: {data_decode}"
                     mensaje_por_ventana(message)
+    #cuando se cierre el servidor mediante el boton al estar esperando recibir y cerrarse la conexión abrupta saltará una excepción que manejamos aquí
     except (ConnectionAbortedError, ConnectionResetError):
         print(f"Conexión finalizada debido a que el servidor se cierra con el cliente{client_address}")
     finally:
@@ -59,6 +71,9 @@ def handle_client(connection, client_address):
                         connection.close()
         print(f"Conexión cerrada con {client_address[1]}")
         mensaje_por_ventana(f"Conexión cerrada con {usuario}")
+
+
+#Recorre la lista donde estan las conexiones y las cierra, una vez terminado limpia la lista.
 
 def close_all_connections():
     global clientes_conectados
@@ -74,7 +89,10 @@ def close_all_connections():
         #despues de cerrar todas las conexiones vaciamos la lista
         clientes_conectados.clear()
     print_list_clientes_conectados()
-#Create server socket TCP
+    ventana.after(TIME_BEFORE_CLOSE_SERVER_WINDOWS, ventana.destroy) #destruir la ventana principal
+
+
+#Print por la terminal de los clientes
 def print_list_clientes_conectados():
     global clientes_conectados
     print("---------------------------")
@@ -87,7 +105,9 @@ def print_list_clientes_conectados():
         for connection, client_address in clientes_conectados:
             print(f"cliente conectado: {client_address[1]}")
     print("---------------------------")       
-            
+
+#Hilo que crea el servidor en el puerto correspondiente y escucha a clientes creando un hilo por cada cliente
+#Una vez la flag de que se ha tocado el boton se activa sale del bucle y realiza el cierre de todos las conexiones para finalizar 
 def create_server(port):
     global clientes_conectados
     server = socket(AF_INET,SOCK_STREAM)
@@ -114,7 +134,7 @@ def create_server(port):
         print("Servidor cerrado")
         mensaje_por_ventana("Se ha cerrado el servidor")
 
-# Función que se ejecutará al pulsar el botón
+# Función que se ejecutará al pulsar el botón de crear el servidor crea el hilo create_server
 def boton_click():
     texto = cuadro_texto_puerto.get()
     try:
@@ -130,11 +150,12 @@ def boton_click():
     except ValueError:
         mostrar_error_entero()
 
+#funcion que se activa una vez se toca el botón cerrar servidor, activa flag para cerrar servidor y inhabilita el boton 
 def cerrar_servidor():
     stop_event.set()
     boton_cerrar.config(state='disabled')
-    ventana.after(TIME_BEFORE_CLOSE_SERVER_WINDOWS, ventana.destroy)
-
+    
+#Comprueba si el puerto escrito por la ventana es un entero
 def mostrar_error_entero():
     ventana_no_entero = tk.Toplevel(ventana)
     ventana_no_entero.title("Error")
@@ -151,6 +172,7 @@ def mostrar_error_entero():
     tk.Label(ventana_no_entero, text="Por favor introduce un valor entero").grid(row=0, column=0, padx=20, pady=20)
     ventana_no_entero.mainloop()
 
+#comprueba si ha habido algún problema al encontrar el tiempo en la página web
 def mostrar_error_clima():
     ventana_no_clima = tk.Toplevel(ventana)
     ventana_no_clima.title("Error")
@@ -167,6 +189,7 @@ def mostrar_error_clima():
     tk.Label(ventana_no_clima, text="No se pudo obtener el clima").grid(row=0, column=0, padx=20, pady=20)
     ventana_no_clima.mainloop()
 
+#obtener la temperatura en valencia desde la página web una vez un cliente envie el mensaje: "TIEMPO"
 def obtener_clima_valencia():
     url = f"http://api.openweathermap.org/data/2.5/weather?q=Valencia,ES&appid={API_KEY}&units=metric"
     response = requests.get(url)
@@ -177,6 +200,7 @@ def obtener_clima_valencia():
     else:
         mostrar_error_clima()
 
+#Funcion encarga de imprimir por la ventana principal los mensajes
 def mensaje_por_ventana(message):
     ventana.after(0, cuadro_texto_destino.insert, tk.END, f"{message}\n")
     ventana.after(0, cuadro_texto_destino.yview_moveto, 1.0)    
