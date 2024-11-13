@@ -9,3 +9,23 @@ Ultimos cambios a hacer si dios quiere:
 (HECHO) 5. NUevo problema: cuando le das al boton de cerrar servidor saltan muchos errores
 6. Testear un poco más aunq yo lo veo GOD
 7. Crear mini doc explicando un poco todo/ limpiar y hacer código más clean con comentarios que expliquen las funciones y un comentario al principio explicando un poco el funcionamiento de la clase
+
+El objetivo de este proyecto ha sido crear una comunicación cliente servidor que permita al usuario crear todos los clientes que quiera dentro de un servidor, además de permitir que haya varios servidores con distintos clientes. Para hacerlo más friendly para el usuario, este tendrá un nombre de usuario que dentro de un servidor no podrá ser duplicado.
+Además hemos buscado la robustez dentro de la aplicación con el fin de que no se den casos extraordinarios durante la ejecución de la aplicación
+Modo de funcionamiento:
+1. Ejecuta el script del servidor y elige un puerto.
+2. Ejecuta el script del cliente, al crear el usuario necesitaras poner la ip, en este caso usamos la local_ip (127.0.0.1), el puerto del servidor activo
+    y el nombre del usuario.
+3. Una vez creado el usuario se te abrirá una nueva ventana en la que de titulo saldrá tu usuario y podrás enviar mensajes directos al usuario.
+    los mensajes saldrán en el servidor con el usuario que los ha enviado.
+    Las palabras claves son:
+    FIN-> Finaliza la conexion con el servidor
+    HORA-> El servidor devuelve la hora actual
+    TIEMPO -> El servidor guiandose de una web de tiempo, devuelve el tiempo actual en Valencia (temperatura)
+4. Como ultimo puedas clickar el botón cerrar servidor de la ventana servidor, este se encargará de cerrar todas las conexiones con los     
+     clientes,   y de eliminar la ventana del servidor terminando la ejecución del programa
+
+     Además la aplicación permite que te crees más de un servidor y que puedas asignar los usuarios a distintos servidores.
+
+    Por último aunque usemos el usuario y no el puerto, desde la terminal se va siguiendo el proceso mediante mensajes para que se pueda
+    saber cada usuario a que puerto están asociados. 
